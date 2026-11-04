@@ -4,5 +4,10 @@
   "lat": 47.3769,
   "lon": 8.5417,
   "tz": "Europe/Zurich",
-  "override": null
+  "override": {
+    "weather": "clear",
+    "season": "autumn",
+    "hour": null,
+    "until": "2026-11-04T20:46:58Z"
+  }
 }
