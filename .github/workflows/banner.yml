@@ -1,0 +1,53 @@
+name: Update banner
+
+on:
+  schedule:
+    - cron: "*/30 * * * *"   # every 30 minutes
+  workflow_dispatch:
+  push:
+    branches: [main]
+
+permissions:
+  contents: write
+
+concurrency:
+  group: banner
+  cancel-in-progress: false
+
+jobs:
+  build:
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/setup-python@v5
+        with:
+          python-version: "3.12"
+      - name: Get the latest Lookout and its dependencies
+        run: |
+          bash .github/scripts/update_lookout.sh
+          pip install -q numpy pillow
+      - name: First run in a copy - turn it into a profile README
+        if: github.repository != 'Flaco2009/lookout-banner'
+        run: |
+          if grep -q "lookout:product" README.md; then
+            sed "s#{{USER}}#${{ github.repository_owner }}#g" .github/lookout/profile-README.md > README.md
+            python - <<'PY'
+          import json
+          c = json.load(open("config.json")); c["name"] = ""; c["override"] = None
+          json.dump(c, open("config.json", "w"), indent=2, ensure_ascii=False)
+          PY
+            git config user.name "github-actions[bot]"
+            git config user.email "github-actions[bot]@users.noreply.github.com"
+            git add README.md config.json
+            git commit -qm "Set up Lookout banner for ${{ github.repository_owner }}" && git push
+          fi
+      - run: mkdir out && python generate.py out/banner.svg
+      - name: Push to output branch
+        run: |
+          cd out
+          git init -q -b output
+          git config user.name "github-actions[bot]"
+          git config user.email "github-actions[bot]@users.noreply.github.com"
+          git add banner.svg
+          git commit -q -m "update banner"
+          for i in 1 2 3; do git push -f "https://x-access-token:${{ secrets.GITHUB_TOKEN }}@github.com/${{ github.repository }}.git" output && break; sleep 5; done

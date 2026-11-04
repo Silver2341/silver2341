@@ -1,0 +1,5 @@
+<svg xmlns="http://www.w3.org/2000/svg" width="102" height="44" viewBox="0 0 102 44">
+<rect x=".5" y=".5" width="101" height="43" rx="21.5" fill="#121829" stroke="#2c3a58"/>
+<g transform="translate(16 10)" fill="none" stroke="#b6ffb0" stroke-width="1.9" stroke-linecap="round"><circle cx="12" cy="12" r="8.5"/><path d="M12 7.5V12l3 2"/></g>
+<text x="48" y="27.5" font-family="ui-monospace,SFMono-Regular,Menlo,Consolas,monospace" font-size="15" fill="#e6ebf5">Time</text>
+</svg>

@@ -1,0 +1,41 @@
+name: Deploy playground
+
+on:
+  push:
+    branches: [main]
+    paths: ["docs/**", "generate.py", "terrain.py", "assets/terrain/**", ".github/workflows/pages.yml"]
+  workflow_dispatch:
+
+permissions:
+  contents: read
+  pages: write
+  id-token: write
+
+concurrency:
+  group: pages
+  cancel-in-progress: true
+
+jobs:
+  deploy:
+    # only the original hosts the shared playground; copies use it via ?user=
+    if: github.repository == 'Flaco2009/lookout-banner'
+    runs-on: ubuntu-latest
+    environment:
+      name: github-pages
+      url: ${{ steps.deployment.outputs.page_url }}
+    steps:
+      - uses: actions/checkout@v4
+      - name: Build site
+        run: |
+          mkdir _site
+          cp docs/* generate.py terrain.py _site/
+          mkdir -p _site/assets && cp -r assets/terrain _site/assets/
+      - uses: actions/configure-pages@v5
+        with:
+          enablement: true
+        continue-on-error: true
+      - uses: actions/upload-pages-artifact@v3
+        with:
+          path: _site
+      - id: deployment
+        uses: actions/deploy-pages@v4

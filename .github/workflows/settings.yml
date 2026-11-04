@@ -1,0 +1,53 @@
+name: Apply banner settings
+
+on:
+  issues:
+    types: [opened]
+
+permissions:
+  contents: write
+  issues: write
+
+concurrency:
+  group: banner
+  cancel-in-progress: false
+
+jobs:
+  apply:
+    if: startsWith(github.event.issue.title, 'banner:')
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/setup-python@v5
+        with:
+          python-version: "3.12"
+      - name: Get the latest Lookout and its dependencies
+        run: |
+          bash .github/scripts/update_lookout.sh
+          pip install -q numpy pillow
+      - id: apply
+        run: python .github/scripts/apply_issue.py
+      - name: Commit config
+        if: steps.apply.outputs.result == 'ok'
+        run: |
+          git config user.name "github-actions[bot]"
+          git config user.email "github-actions[bot]@users.noreply.github.com"
+          git add config.json
+          git diff --cached --quiet || git commit -m "banner settings: ${{ github.event.issue.title }}"
+          git push
+      - name: Rebuild banner now
+        if: steps.apply.outputs.result == 'ok'
+        run: |
+          mkdir out && python generate.py out/banner.svg
+          cd out
+          git init -q -b output
+          git config user.name "github-actions[bot]"
+          git config user.email "github-actions[bot]@users.noreply.github.com"
+          git add banner.svg
+          git commit -q -m "update banner"
+          for i in 1 2 3; do git push -f "https://x-access-token:${{ secrets.GITHUB_TOKEN }}@github.com/${{ github.repository }}.git" output && break; sleep 5; done
+      - name: Reply and close
+        env:
+          GH_TOKEN: ${{ secrets.GITHUB_TOKEN }}
+          MESSAGE: ${{ steps.apply.outputs.message }}
+        run: gh issue close ${{ github.event.issue.number }} -R ${{ github.repository }} -c "$MESSAGE"
